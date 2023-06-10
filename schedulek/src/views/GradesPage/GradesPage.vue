@@ -22,7 +22,16 @@
 </template>
 
 <script>
+import { useUserStore } from '../../stores/UserStore.js';
+
 export default {
+  setup() {
+    const userStore = useUserStore();
+
+    return {
+      userStore
+    };
+  },
   name: 'GradesTable',
   props: {
     studentId: {
@@ -38,14 +47,14 @@ export default {
   },
   async created() {
     try {
-      const response = await fetch(`http://localhost:5000/grades/11`);
+      const response = await fetch(`http://localhost:5000/grades/${this.userStore.loggedUserId}`);
       const data = await response.json();
       this.grades = data.grades;
     } catch (error) {
       console.error(error);
     }
     try {
-      const response2 = await fetch(`http://localhost:5000/grades_avg/11`);
+      const response2 = await fetch(`http://localhost:5000/grades_avg/${this.userStore.loggedUserId}`);
       const data2 = await response2.json();
       this.grades_avg = data2.grades_avg;
     } catch (error) {

@@ -40,14 +40,24 @@
 </template>
 
 <script>
+import { useUserStore } from '../../stores/UserStore.js';
+
 export default {
+  setup() {
+    const userStore = useUserStore();
+
+    return {
+      userStore
+    };
+  },
   data() {
     return {
       form: {
         studentId: '',
         wage: '',
         grade: '',
-        subject: ''
+        subject: '',
+        teacher_id: this.userStore.loggedUserId
       },
       subjects: {},
       selectedSubject: '',
@@ -59,7 +69,7 @@ export default {
   methods: {
     async fetchData() {
       try {
-        const response = await fetch('http://localhost:5000/teacher_subjects/1');
+        const response = await fetch(`http://localhost:5000/teacher_subjects/${this.userStore.loggedUserId}`);
         if (response.ok) {
           const data = await response.json();
           this.subjects = data.subjects;
@@ -96,7 +106,7 @@ export default {
         const requests = this.students
           .filter(student => student.grade !== '' || student.wage !== '')
           .map(student => {
-            return fetch('http://localhost:5000/grades', {
+            return fetch(`http://localhost:5000/grades`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
@@ -105,7 +115,8 @@ export default {
                 studentId: student.user_id,
                 wage: student.wage,
                 grade: student.grade,
-                subject: this.selectedSubject
+                subject: this.selectedSubject,
+                teacher_id: this.userStore.loggedUserId
               })
             });
           });

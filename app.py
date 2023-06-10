@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from json import loads, dumps
 import pandas as pd
+from datetime import date
 
 app = Flask(__name__)
 CORS(app)
@@ -127,9 +128,8 @@ def get_student_grades(student_id):
     # Open the CSV file and read in the rows
     users = pd.read_csv(USERS_FILE_PATH)
     grades = pd.read_csv(GRADES_FILE_PATH)
-    STUDENT_ID = 11
-    sub_user = users.loc[users['id'] == STUDENT_ID]
-    sub_grades = grades.loc[grades['student_id'] == STUDENT_ID]
+    sub_user = users.loc[users['id'] == student_id]
+    sub_grades = grades.loc[grades['student_id'] == student_id]
     ccc = pd.merge(sub_grades, users, left_on='teacher_id', right_on='id')
     ccc = ccc.reset_index()
     out = []
@@ -141,8 +141,7 @@ def get_student_grades(student_id):
 def get_teacher_subjects(user_id):
     lessons = pd.read_csv(LESSONS_FILE_PATH)
     groups = pd.read_csv(GROUPS_FILE_PATH)
-    USER_ID = 1
-    sub_lessons = lessons.loc[lessons['user_id'] == USER_ID]
+    sub_lessons = lessons.loc[lessons['user_id'] == user_id]
     ccc = pd.merge(sub_lessons, groups, left_on='group_name', right_on='group_name')
     c = ccc[['subject','group_name']].drop_duplicates().reset_index()
     out = c.groupby('subject')['group_name'].apply(list).to_dict()
@@ -152,8 +151,7 @@ def get_teacher_subjects(user_id):
 def get_students_from_group(group_name):
     users = pd.read_csv(USERS_FILE_PATH)
     groups = pd.read_csv(GROUPS_FILE_PATH)
-    GROUP_NAME = '1A'
-    sub_groups = groups.loc[groups['group_name'] == GROUP_NAME]
+    sub_groups = groups.loc[groups['group_name'] == group_name]
     ccc = pd.merge(sub_groups, users, left_on='user_id', right_on='id')
     ccc = ccc.reset_index()
 
@@ -174,16 +172,16 @@ def get_next_id(file_path):
 @app.route('/grades', methods=['POST'])
 def add_grade():
     try:
-        TEACHER_ID = 1
         data = request.get_json()
         student_id = data.get('studentId')
         wage = data.get('wage')
         grade = data.get('grade')
         subject = data.get('subject')
+        teacher_id = data.get('teacher_id')
         if not student_id or not wage or not grade or not subject:
             return jsonify({'error': 'Missing required fields'}), 400
         next_id = get_next_id(GRADES_FILE_PATH)
-        new_grade = [str(next_id), student_id, wage, TEACHER_ID, grade, subject]
+        new_grade = [str(next_id), student_id, wage, teacher_id, grade, subject]
         with open(GRADES_FILE_PATH, 'a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(new_grade)
@@ -195,7 +193,6 @@ def add_grade():
 @app.route('/homework', methods=['POST'])
 def add_homework():
     try:
-        TEACHER_ID = 1
         data = request.get_json()
         print(data)
         student_id = data.get('studentId')
@@ -204,10 +201,12 @@ def add_homework():
         deadline_date = data.get('deadline_date')
         summary = data.get('summary')
         subject = data.get('subject')
+        teacher_id = data.get('teacher_id')
+        print(f'teacher_id{teacher_id}')
         if not student_id or not summary or not subject or not subject:
             return jsonify({'error': 'Missing required fields'}), 400
         next_id = get_next_id(HOMEWORK_FILE_PATH)
-        new_homework = [str(next_id), subject,lesson_number,summary,TEACHER_ID,student_id,0,int(is_to_upload),'None','None',deadline_date]
+        new_homework = [str(next_id), subject,lesson_number,summary,teacher_id,student_id,0,int(is_to_upload),'None','None',deadline_date]
         print(new_homework)
         with open(HOMEWORK_FILE_PATH, 'a', newline='') as file:
             writer = csv.writer(file)
@@ -217,14 +216,38 @@ def add_homework():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/add-message', methods=['POST'])
+def add_message():
+    try:
+        data = request.get_json()
+        print(data)
+        title = data.get('title')
+        message = data.get('message')
+        user_id = data.get('user_id')
+        from_user_id = data.get('logged_user_id')
+        current_date = date.today()
+        formatted_date = current_date.strftime("%Y-%m-%d")
+        if not user_id or not message or not from_user_id or not title:
+            return jsonify({'error': 'Missing required fields'}), 400
+        next_id = get_next_id(MESSAGES_FILE_PATH)
+        new_homework = [str(next_id), formatted_date,from_user_id,user_id,title,message]
+        print(new_homework)
+        with open(MESSAGES_FILE_PATH, 'a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(new_homework)
+        return jsonify({'message': 'Message added successfully'}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/grades_avg/<int:student_id>')
 def get_student_grades_average(student_id):
     # Open the CSV file and read in the rows
     users = pd.read_csv(USERS_FILE_PATH)
     grades = pd.read_csv(GRADES_FILE_PATH)
-    STUDENT_ID = 11
-    sub_user = users.loc[users['id'] == STUDENT_ID]
-    sub_grades = grades.loc[grades['student_id'] == STUDENT_ID]
+    sub_user = users.loc[users['id'] == student_id]
+    sub_grades = grades.loc[grades['student_id'] == student_id]
     ccc = pd.merge(sub_grades, users, left_on='teacher_id', right_on='id')
     ccc = ccc.reset_index()
 
@@ -245,8 +268,7 @@ def get_student_lessons(student_id):
     # Open the CSV file and read in the rows
     lessons = pd.read_csv(LESSONS_FILE_PATH)
     groups = pd.read_csv(GROUPS_FILE_PATH)
-    STUDENT_ID = 11
-    sub_user = groups.loc[groups['user_id'] == STUDENT_ID]
+    sub_user = groups.loc[groups['user_id'] == student_id]
     sub_lessons = lessons.loc[lessons['group_name'] == sub_user['group_name'][0]]
     sub_lessons = sub_lessons.sort_values(by=['date','lesson_number'])
     sub_lessons = sub_lessons.reset_index()
@@ -256,12 +278,24 @@ def get_student_lessons(student_id):
     return {'lessons': out}
 
 
+@app.route('/all-students')
+def get_all_students():
+    users = pd.read_csv(USERS_FILE_PATH)
+    groups = pd.read_csv(GROUPS_FILE_PATH)
+    ccc = pd.merge(groups, users, left_on='user_id', right_on='id')
+    ccc = ccc.reset_index()
+    out = []
+    for index, row in ccc.iterrows():
+        out.append({'full_name': ' '.join([row['name'],row['last_name']]),
+         'user_id': row['user_id'], 'id': row['id_x']})
+    return {'students': out}
+
+
 @app.route('/homework/<int:student_id>')
 def get_student_homework(student_id):
     homework = pd.read_csv(HOMEWORK_FILE_PATH)
     users = pd.read_csv(USERS_FILE_PATH)
-    STUDENT_ID = 11
-    sub_homework = homework.loc[homework['student_id'] == STUDENT_ID]
+    sub_homework = homework.loc[homework['student_id'] == student_id]
     ccc = pd.merge(sub_homework, users, left_on='teacher_id', right_on='id')
     ccc = ccc.reset_index()
     out = []
@@ -275,8 +309,7 @@ def get_student_homework(student_id):
 @app.route('/homework_teacher/<int:teacher_id>')
 def get_teacher_homework(teacher_id):
     homework = pd.read_csv(HOMEWORK_FILE_PATH)
-    TEACHER_ID = 1
-    sub_homework = homework.loc[homework['teacher_id'] == TEACHER_ID]
+    sub_homework = homework.loc[homework['teacher_id'] == teacher_id]
     groups = pd.read_csv(GROUPS_FILE_PATH)
     ccc = pd.merge(sub_homework, groups, left_on='student_id', right_on='user_id')
     ccc = ccc.drop('user_id', axis=1)
@@ -294,8 +327,7 @@ def get_teacher_homework(teacher_id):
 def get_student_timetable(student_id):
     lessons = pd.read_csv(LESSONS_FILE_PATH)
     groups = pd.read_csv(GROUPS_FILE_PATH)
-    STUDENT_ID = 11
-    sub_user = groups.loc[groups['user_id'] == STUDENT_ID]
+    sub_user = groups.loc[groups['user_id'] == student_id]
     sub_lessons = lessons.loc[lessons['group_name'] == sub_user['group_name'][0]]
     sub_lessons = sub_lessons.reset_index()
     c = sub_lessons
@@ -311,8 +343,7 @@ def get_student_timetable(student_id):
 def get_teacher_timetable(user_id):
     lessons = pd.read_csv(LESSONS_FILE_PATH)
     groups = pd.read_csv(GROUPS_FILE_PATH)
-    USER_ID = 1
-    sub_lessons = lessons.loc[lessons['user_id'] == USER_ID]
+    sub_lessons = lessons.loc[lessons['user_id'] == user_id]
     ccc = pd.merge(sub_lessons, groups, left_on='group_name', right_on='group_name')
     ccc = ccc.reset_index()
     c = ccc
@@ -343,6 +374,7 @@ def user_info():
             user_info["last_name"] = user["last_name"]
             user_info["name"] = user["name"]
             user_info["type"] = user["type"]
+            user_info["id"] = user["id"]
             
             return user_info
         
@@ -364,9 +396,8 @@ def get_user_messages(student_id):
         # Open the CSV file and read in the rows
     users = pd.read_csv(USERS_FILE_PATH)
     messages = pd.read_csv(MESSAGES_FILE_PATH)
-    STUDENT_ID = 11
-    sub_mess = messages.loc[messages['from_user_id'] == STUDENT_ID]
-    sub_mess2 = messages.loc[messages['to_user_id'] == STUDENT_ID]
+    sub_mess = messages.loc[messages['from_user_id'] == student_id]
+    sub_mess2 = messages.loc[messages['to_user_id'] == student_id]
 
     ccc = pd.merge(sub_mess, users, left_on='to_user_id', right_on='id')
     ccc = ccc.reset_index()
@@ -378,7 +409,7 @@ def get_user_messages(student_id):
     out2 = []
 
     for index, row in ccc.iterrows():
-        out1.append({'id': row['index'], 'date': row['date_sent'], 'from': ' '.join([row['name'],row['last_name']]), 'title': row['title'], 'message': row['message']})
+        out1.append({'id': row['index'], 'date': row['date_sent'], 'to': ' '.join([row['name'],row['last_name']]), 'title': row['title'], 'message': row['message']})
 
     for index, row in ccc2.iterrows():
         out2.append({'id': row['index'], 'date': row['date_sent'], 'from': ' '.join([row['name'],row['last_name']]), 'title': row['title'], 'message': row['message']})

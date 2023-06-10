@@ -85,6 +85,7 @@ export default {
       else {
         this.userStore.storeEmail(this.email);
         this.userStore.storeType(this.user.type);
+        this.userStore.storeLoggedUserId(this.user.id);
         this.userStore.storeName(this.user.name);
         this.userStore.storeLastName(this.user.last_name);
       }

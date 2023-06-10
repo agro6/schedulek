@@ -32,7 +32,16 @@
 </template>
 
 <script>
+import { useUserStore } from '../../stores/UserStore.js';
+
 export default {
+  setup() {
+    const userStore = useUserStore();
+
+    return {
+      userStore
+    };
+  },
   name: 'CalendarPage',
   props: {
     studentId: {
@@ -49,14 +58,14 @@ export default {
   },
   async created() {
     try {
-        const response = await fetch(`http://localhost:5000/lessons/11`);
+        const response = await fetch(`http://localhost:5000/lessons/${this.userStore.loggedUserId}`);
         const data = await response.json();
         this.schedule = this.processScheduleData(data.lessons);
           const responseHrs = await fetch(`http://localhost:5000/lessons_hours`);
           const hours_data = await responseHrs.json();
           this.mappedHours = hours_data.hours;
           console.log(this.mappedHours);
-        const homeworkResponse = await fetch(`http://localhost:5000/homework/11`);
+        const homeworkResponse = await fetch(`http://localhost:5000/homework/${this.userStore.loggedUserId}`);
         const homeworkData = await homeworkResponse.json();
         this.homework = homeworkData.homework;
     } catch (error) {

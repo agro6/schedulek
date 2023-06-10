@@ -33,7 +33,16 @@
 </template>
 
 <script>
+import { useUserStore } from '../../stores/UserStore.js';
+
 export default {
+  setup() {
+    const userStore = useUserStore();
+
+    return {
+      userStore
+    };
+  },
   name: 'TimetableTeacher',
   props: {
     studentId: {
@@ -51,7 +60,7 @@ export default {
   },
   async created() {
     try {
-      const response = await fetch(`http://localhost:5000/teacher_lessons_table/1`);
+      const response = await fetch(`http://localhost:5000/teacher_lessons_table/${this.userStore.loggedUserId}`);
       const data = await response.json();
       this.timetable = data.timetable;
       console.log(this.timetable);

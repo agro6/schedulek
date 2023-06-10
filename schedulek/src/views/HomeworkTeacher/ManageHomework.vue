@@ -21,7 +21,16 @@
 </template>
 
 <script>
+import { useUserStore } from '../../stores/UserStore.js';
+
 export default {
+  setup() {
+    const userStore = useUserStore();
+
+    return {
+      userStore
+    };
+  },
   name: 'ManageHomework',
   props: {
     studentId: {
@@ -36,7 +45,7 @@ export default {
   },
   async created() {
     try {
-      const response = await fetch(`http://localhost:5000/homework_teacher/1`);
+      const response = await fetch(`http://localhost:5000/homework_teacher/${this.userStore.loggedUserId}`);
       const data = await response.json();
       this.homework = data.homework;
     } catch (error) {

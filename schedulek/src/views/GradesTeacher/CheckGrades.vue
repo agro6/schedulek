@@ -14,6 +14,9 @@
       </select>
     </div>
 
+
+    <button v-if="selectedSubject && selectedGroup" @click="fetchGrades" class="nav-button">Check</button>
+
     <table v-if="students.length > 0" class="student-table">
       <thead>
         <tr>
@@ -23,30 +26,33 @@
         </tr>
       </thead>
       <tbody>
-               <tr v-for="student in students" :key="student.id">
-                 <td>{{ student.student }}</td>
-                 <td>
-                   <span v-if="student.grades.length > 0">
-                     <div
-                       v-for="(grade, index) in student.grades"
-                       :key="index"
-                        :class="getGradeClass(grade.wage)"
-                     >
-                         {{ grade.grade }}
-
-                     </div>
-                   </span>
-                 </td>
-    <td>{{ calculateAverage(student.grades.map(g => g.grade), student.grades.map(g => g.wage)) }}</td>
-               </tr>
-             </tbody>
+        <tr v-for="student in students" :key="student.id">
+          <td>{{ student.student }}</td>
+          <td>
+            <span v-if="student.grades.length > 0">
+              <div v-for="(grade, index) in student.grades" :key="index" :class="getGradeClass(grade.wage)">
+                {{ grade.grade }}
+              </div>
+            </span>
+          </td>
+          <td>{{ calculateAverage(student.grades.map(g => g.grade), student.grades.map(g => g.wage)) }}</td>
+        </tr>
+      </tbody>
     </table>
-
   </div>
 </template>
 
 <script>
+import { useUserStore } from '../../stores/UserStore.js';
+
 export default {
+  setup() {
+    const userStore = useUserStore();
+
+    return {
+      userStore
+    };
+  },
   data() {
     return {
       form: {
@@ -67,7 +73,7 @@ export default {
     },
     async fetchData() {
       try {
-        const response = await fetch('http://localhost:5000/teacher_subjects/1');
+        const response = await fetch(`http://localhost:5000/teacher_subjects/${this.userStore.loggedUserId}`);
         if (response.ok) {
           const data = await response.json();
           this.subjects = data.subjects;
@@ -98,72 +104,65 @@ export default {
       this.selectedGroup = '';
       this.students = [];
     },
-async fetchGrades() {
-  try {
-    const response = await fetch(`http://localhost:5000/grades/${this.selectedGroup}/${this.selectedSubject}`);
-    const data = await response.json();
+    async fetchGrades() {
+      try {
+        const response = await fetch(`http://localhost:5000/grades/${this.selectedGroup}/${this.selectedSubject}`);
+        if (response.ok) {
+          const data = await response.json();
 
-    console.log('Data:', data);
+          this.students.forEach((student) => {
+            const studentGrades = data.grades
+              .filter((grade) => grade.student_id === student.user_id)
+              .map((grade) => ({
+                grade: grade.grade,
+                wage: grade.wage
+              }));
 
-this.students.forEach((student) => {
-  console.log('Before Assignment - Student:', student);
+            student.grades = studentGrades.length > 0 ? [...studentGrades] : [];
+          });
+        } else {
+          throw new Error('Failed to fetch grades');
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    calculateAverage(grades, wages) {
+      if (grades.length === 0) {
+        return '';
+      }
 
-const studentGrades = data.grades
-  .filter((grade) => grade.student_id === student.user_id)
-  .map((grade) => ({
-    grade: grade.grade,
-    wage: grade.wage
-  }));
-
-  console.log('Student ID:', student.user_id);
-  console.log('Student Grades:', studentGrades);
-
-  student.grades = studentGrades.length > 0 ? [...studentGrades] : [];
-
-  console.log('After Assignment - Student:', student);
-});
-
-  } catch (error) {
-    console.error(error);
-  }
-},
-
-  calculateAverage(grades, wages) {
-    if (grades.length === 0) {
-      return '';
-    }
-
-    const weightedSum = grades.reduce((total, grade, index) => total + grade * wages[index], 0);
-    const sumOfWeights = Object.values(wages).reduce((total, weight) => total + weight, 0);
-    const average = weightedSum / sumOfWeights;
-    return average.toFixed(2);
-  },
-  async checkSubjectAndGroup() {
-    if (this.selectedSubject && this.selectedGroup) {
-      await this.fetchGrades();
-    }
-  }
-
-  },
-watch: {
-  selectedGroup() {
-    if (this.selectedGroup) {
-      this.fetchStudents();
-      this.checkSubjectAndGroup();
+      const weightedSum = grades.reduce((total, grade, index) => total + grade * wages[index], 0);
+      const sumOfWeights = Object.values(wages).reduce((total, weight) => total + weight, 0);
+      const average = weightedSum / sumOfWeights;
+      return average.toFixed(2);
+    },
+    async checkSubjectAndGroup() {
+      if (this.selectedSubject && this.selectedGroup) {
+        await this.fetchGrades();
+      }
     }
   },
-  selectedSubject() {
-    if (this.selectedSubject && this.selectedGroup) {
-      this.checkSubjectAndGroup();
+  watch: {
+    selectedGroup() {
+      if (this.selectedGroup) {
+        this.fetchStudents();
+        this.checkSubjectAndGroup();
+      }
+    },
+    selectedSubject() {
+      if (this.selectedSubject && this.selectedGroup) {
+        this.checkSubjectAndGroup();
+      }
     }
+  },
+  mounted() {
+    this.fetchData();
+    this.checkSubjectAndGroup();
   }
-},
-mounted() {
-  this.fetchData();
-  this.checkSubjectAndGroup();
-}
 };
 </script>
+
 <style scoped>
 .popup {
   background-color: #4CAF50;
@@ -182,11 +181,29 @@ mounted() {
   margin-top: 20px;
   gap: 20px;
 }
+.nav-button{
+  display: flex;
+  justify-content: center;
+  background: #2B6777;
+  border-radius: 20px;
+  width: 210px;
+  height: 77px;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 20px;
+  color: white;
+  text-decoration: none;
+  margin-right: 20px;
+  align-items: center;
+  margin-top: 200px;
+}
+
 
 .student-table {
   margin: 200px;
   margin-top: 20px;
 }
+
 select {
   width: 300px;
   height: 30px;
@@ -236,10 +253,12 @@ td {
   background-color: #F7F8FED9;
   width: 100px;
 }
-.grades-column{
+
+.grades-column {
   width: 420px;
 }
-tr{
+
+tr {
   margin-bottom: 10px;
 }
 

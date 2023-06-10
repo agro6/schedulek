@@ -30,7 +30,6 @@
     <div v-else-if="userStore.type == 'teacher'" class="nav-panel" >
         <div class="nav-group">
           <router-link class="nav-button" :to="{ name: 'TimetableTeacher' }">Timetable</router-link>
-          <router-link class="nav-button" :to="{ name: 'AttendanceTeacher' }">Attendance</router-link>
           <router-link class="nav-button" :to="{ name: 'GradesTeacher' }">Grades</router-link>
           <router-link class="nav-button" :to="{ name: 'HomeworkTeacher' }">Homework</router-link>
         </div>

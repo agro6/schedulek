@@ -1,5 +1,5 @@
 id,date_sent,from_user_id,to_user_id,title,message
-1,2022-01-03,1,11,Testing title,Testing message
-2,2022-01-04,1,11,2Testing title,2Testing message dsfsdfjskfksfjkshdfjkhsd kjsdhfsdhfjksdhf ksjdf jshd i wn kodksl kdjfiwefncjsdf m iwjd
-3,2022-01-03,1,12,different user Testing title,Testing message
-4,2022-01-05,11,1,to teacher ,from student11
+1,2022-01-03,1,11,Exam Reminder,Upcoming exam. Good luck!
+2,2022-01-04,1,11,Assignment Extension,Deadline extended.
+3,2022-01-03,1,12,Class Presentation,You're selected for a presentation.
+4,2022-01-05,11,1,Request for Extra Help,Need extra help. Can we meet?

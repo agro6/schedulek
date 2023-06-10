@@ -14,9 +14,9 @@
       </select>
     </div>
 
-    <div v-if="selectedGroup">
+    <div v-if="selectedGroup" class="homework-details">
       <label for="deadlineDate">Deadline Date:</label>
-      <input type="date" v-model="form.deadlineDate">
+        <input type="date" v-model="form.deadlineDate">
 
       <label for="lessonHour">Lesson Hour:</label>
       <input type="text" v-model="form.lessonHour">
@@ -37,8 +37,18 @@
 </template>
 
 
+
 <script>
+import { useUserStore } from '../../stores/UserStore.js';
+
 export default {
+  setup() {
+    const userStore = useUserStore();
+
+    return {
+      userStore
+    };
+  },
   data() {
     return {
       form: {
@@ -46,6 +56,7 @@ export default {
         lessonHour: '',
         isToUpload: false,
         summary: '',
+        teacher_id: this.userStore.loggedUserId
       },
       subjects: {},
       selectedSubject: '',
@@ -53,10 +64,15 @@ export default {
       successMessage: ''
     };
   },
+    computed: {
+      defaultDeadlineDate() {
+        return '2022-01-03';
+      }
+    },
   methods: {
     async fetchData() {
       try {
-        const response = await fetch('http://localhost:5000/teacher_subjects/1');
+        const response = await fetch(`http://localhost:5000/teacher_subjects/${this.userStore.loggedUserId}`);
         if (response.ok) {
           const data = await response.json();
           this.subjects = data.subjects;
@@ -77,7 +93,7 @@ export default {
           const data = await response.json();
           const students = data.students;
           const requests = students.map(student => {
-            return fetch('http://localhost:5000/homework', {
+            return fetch(`http://localhost:5000/homework`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
@@ -88,7 +104,8 @@ export default {
                 deadline_date: this.form.deadlineDate,
                 lesson_number: this.form.lessonHour,
                 is_to_upload: this.form.isToUpload,
-                summary: this.form.summary
+                summary: this.form.summary,
+                teacher_id: this.form.teacher_id
               })
             });
           });
@@ -127,8 +144,45 @@ export default {
 </script>
 
 <style scoped>
+.add-homework-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.subject-group-dropdown {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  align-items: center;
+}
+
+label {
+  font-weight: bold;
+}
+
+input[type="date"],
+input[type="text"],
+textarea {
+  width: 200px;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
 .popup {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
   padding: 10px;
   position: fixed;
@@ -136,6 +190,7 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
 
 .add-grades-options {
   display: flex;

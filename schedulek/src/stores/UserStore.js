@@ -5,7 +5,8 @@ export const useUserStore = defineStore('userStore', {
     email: '',
     type: '',
     name: '',
-    last_name:''
+    last_name:'',
+    loggedUserId:''
   }),
   actions: {
     storeEmail(email) {
@@ -19,7 +20,10 @@ export const useUserStore = defineStore('userStore', {
     },
     storeLastName(lastname) {
       this.last_name = lastname
-    }
+    },
+    storeLoggedUserId(loggedUserId) {
+      this.loggedUserId = loggedUserId;
+    },
   }
 
 })
